@@ -16,6 +16,11 @@ interface CurveLine {
   id: number;
 }
 
+interface CurveWithColor extends CurveLine {
+  color: THREE.Color;
+  title: string;
+}
+
 export const SpherePoints = () => {
   const [points, setPoints] = useState<Point[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
@@ -25,6 +30,12 @@ export const SpherePoints = () => {
   const [showAxes, setShowAxes] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newPointTitle, setNewPointTitle] = useState('');
+  const [isAddingCurve, setIsAddingCurve] = useState(false);
+  const [selectedPoints, setSelectedPoints] = useState<Point[]>([]);
+  const [showCurveModal, setShowCurveModal] = useState(false);
+  const [newCurveTitle, setNewCurveTitle] = useState('');
+  const [startPoint, setStartPoint] = useState<Point | null>(null);
+  const [endPoint, setEndPoint] = useState<Point | null>(null);
 
   // 生成随机颜色
   const generateRandomColor = () => {
@@ -33,10 +44,6 @@ export const SpherePoints = () => {
     const lightness = 0.5 + Math.random() * 0.2;
     return new THREE.Color().setHSL(hue, saturation, lightness);
   };
-
-  interface CurveWithColor extends CurveLine {
-    color: THREE.Color;
-  }
 
   const [curves, setCurves] = useState<CurveWithColor[]>([]);
 
@@ -79,7 +86,8 @@ export const SpherePoints = () => {
             start: nearPoint.position,
             end: position,
             id: curveIdCounter.current++,
-            color: generateRandomColor()
+            color: generateRandomColor(),
+            title: `Curve ${curveIdCounter.current}`
           };
           newCurves.push(newCurve);
         });
@@ -125,23 +133,23 @@ export const SpherePoints = () => {
       color: generateRandomColor()
     };
 
-    setPoints(prevPoints => {
-      const newPoints = [...prevPoints, newPoint];
-      // 与最近的3个点连接
-      if (prevPoints.length >= 3) {
-        const nearestPoints = findNearestPoints(position, prevPoints, 3);
-        nearestPoints.forEach(nearPoint => {
-          const newCurve: CurveWithColor = {
-            start: nearPoint.position,
-            end: position,
-            id: curveIdCounter.current++,
-            color: generateRandomColor()
-          };
-          setCurves(prev => [...prev, newCurve]);
-        });
-      }
-      return newPoints;
-    });
+    // 添加新点
+    setPoints(prevPoints => [...prevPoints, newPoint]);
+
+    // 只为新点添加连接线
+    if (points.length >= 3) {
+      const nearestPoints = findNearestPoints(position, points, 3);
+      nearestPoints.forEach(nearPoint => {
+        const newCurve: CurveWithColor = {
+          start: nearPoint.position,
+          end: position,
+          id: curveIdCounter.current++,
+          color: generateRandomColor(),
+          title: `Curve ${curveIdCounter.current}`
+        };
+        setCurves(prev => [...prev, newCurve]);
+      });
+    }
 
     setShowModal(false);
     setNewPointTitle('');
@@ -157,6 +165,45 @@ export const SpherePoints = () => {
       !(curve.start.equals(points.find(p => p.id === pointId)?.position!) || 
         curve.end.equals(points.find(p => p.id === pointId)?.position!))
     ));
+  };
+
+  // 添加删除线的函数
+  const deleteCurve = (curveId: number) => {
+    setCurves(prevCurves => prevCurves.filter(c => c.id !== curveId));
+  };
+
+  // 添加新曲线的函数
+  const addNewCurve = () => {
+    if (startPoint && endPoint) {
+      const newCurve: CurveWithColor = {
+        start: startPoint.position,
+        end: endPoint.position,
+        id: curveIdCounter.current++,
+        color: generateRandomColor(),
+        title: newCurveTitle || `Curve ${curveIdCounter.current}`
+      };
+      setCurves(prev => [...prev, newCurve]);
+      
+      // 重置状态
+      setStartPoint(null);
+      setEndPoint(null);
+      setNewCurveTitle('');
+      setShowCurveModal(false);
+    }
+  };
+
+  // 处理点击点的事件
+  const handlePointClick = (point: Point) => {
+    if (!isAddingCurve) return;
+
+    setSelectedPoints(prev => {
+      const newSelected = [...prev, point];
+      if (newSelected.length === 2) {
+        addNewCurve();
+        return [];
+      }
+      return newSelected;
+    });
   };
 
   return (
@@ -347,7 +394,28 @@ export const SpherePoints = () => {
 
         {/* 线列表 */}
         <div>
-          <h3>Curves</h3>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '10px'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: 0 }}>Curves</h3>
+            <button
+              onClick={() => setShowCurveModal(true)}
+              style={{
+                padding: '4px 8px',
+                background: 'rgba(68, 68, 255, 0.8)',
+                border: 'none',
+                borderRadius: '4px',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Add Curve
+            </button>
+          </div>
           <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
             {curves.map(curve => (
               <div 
@@ -359,18 +427,43 @@ export const SpherePoints = () => {
                   borderRadius: '4px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  justifyContent: 'space-between'
                 }}
               >
-                <div 
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    background: curve.color.getStyle()
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div 
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: curve.color.getStyle()
+                    }}
+                  />
+                  <span>{curve.title}</span>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteCurve(curve.id);
                   }}
-                />
-                <span>Curve {curve.id}</span>
+                  style={{
+                    background: 'rgba(255, 77, 77, 0.8)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    padding: 0
+                  }}
+                >
+                  ×
+                </button>
               </div>
             ))}
           </div>
@@ -442,9 +535,13 @@ export const SpherePoints = () => {
               position={point.position}
               onPointerOver={() => setHoveredPoint(point.id)}
               onPointerOut={() => setHoveredPoint(null)}
+              onClick={() => handlePointClick(point)}
+              style={{ cursor: isAddingCurve ? 'pointer' : 'default' }}
             >
               <sphereGeometry args={[0.1, 16, 16]} />
-              <meshPhongMaterial color={point.color} />
+              <meshPhongMaterial 
+                color={selectedPoints.includes(point) ? 'yellow' : point.color} 
+              />
               {hoveredPoint === point.id && (
                 <Html
                   position={[0, 0.2, 0]}
@@ -482,6 +579,134 @@ export const SpherePoints = () => {
           <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
         </Canvas>
       </div>
+
+      {/* 添加曲线的模态框 */}
+      {showCurveModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{
+            background: 'rgba(128, 128, 128, 0.95)',
+            padding: '20px',
+            borderRadius: '8px',
+            minWidth: '300px'
+          }}>
+            <h3 style={{ margin: '0 0 15px 0', color: 'white' }}>Add New Curve</h3>
+            
+            {/* 起点选择 */}
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', color: 'white' }}>
+                Start Point
+              </label>
+              <select
+                value={startPoint?.id ?? ''}
+                onChange={(e) => setStartPoint(points.find(p => p.id === Number(e.target.value)) || null)}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: 'none'
+                }}
+              >
+                <option value="">Select start point</option>
+                {points.map(point => (
+                  <option key={point.id} value={point.id}>
+                    {point.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 终点选择 */}
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', color: 'white' }}>
+                End Point
+              </label>
+              <select
+                value={endPoint?.id ?? ''}
+                onChange={(e) => setEndPoint(points.find(p => p.id === Number(e.target.value)) || null)}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: 'none'
+                }}
+              >
+                <option value="">Select end point</option>
+                {points.filter(p => p.id !== startPoint?.id).map(point => (
+                  <option key={point.id} value={point.id}>
+                    {point.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 标题输入 */}
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', color: 'white' }}>
+                Curve Title
+              </label>
+              <input
+                type="text"
+                value={newCurveTitle}
+                onChange={(e) => setNewCurveTitle(e.target.value)}
+                placeholder="Enter curve title"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: 'none'
+                }}
+              />
+            </div>
+
+            {/* 按钮组 */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowCurveModal(false);
+                  setStartPoint(null);
+                  setEndPoint(null);
+                  setNewCurveTitle('');
+                }}
+                style={{
+                  padding: '8px 12px',
+                  background: '#666',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addNewCurve}
+                disabled={!startPoint || !endPoint}
+                style={{
+                  padding: '8px 12px',
+                  background: !startPoint || !endPoint ? '#666' : '#4444ff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: 'white',
+                  cursor: !startPoint || !endPoint ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
