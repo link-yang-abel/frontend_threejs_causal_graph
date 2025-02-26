@@ -805,12 +805,12 @@ function getMidPointPosition(start: THREE.Vector3, end: THREE.Vector3, radius: n
 }
 
 // 获取箭头旋转
-function getArrowRotation(start: THREE.Vector3, end: THREE.Vector3): [number, number, number] {
-  const direction = end.clone().sub(start);
-  const euler = new THREE.Euler();
-  euler.setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0, 0, 1),
-    direction.normalize()
-  ));
-  return [euler.x, euler.y, euler.z];
-} 
+// function getArrowRotation(start: THREE.Vector3, end: THREE.Vector3): [number, number, number] {
+//   const direction = end.clone().sub(start);
+//   const euler = new THREE.Euler();
+//   euler.setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+//     new THREE.Vector3(0, 0, 1),
+//     direction.normalize()
+//   ));
+//   return [euler.x, euler.y, euler.z];
+// } 
