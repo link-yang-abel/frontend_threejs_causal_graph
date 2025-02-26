@@ -1,0 +1,9 @@
+name = "sphere-points"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "pnpm run build"
+output_dir = "dist"
+
+[build.environment]
+NODE_VERSION = "20" 
