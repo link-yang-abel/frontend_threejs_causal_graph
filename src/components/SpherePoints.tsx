@@ -22,6 +22,9 @@ export const SpherePoints = () => {
   const sphereRadius = 5;
   const pointIdCounter = useRef(0);
   const curveIdCounter = useRef(0);
+  const [showAxes, setShowAxes] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [newPointTitle, setNewPointTitle] = useState('');
 
   // 生成随机颜色
   const generateRandomColor = () => {
@@ -104,105 +107,382 @@ export const SpherePoints = () => {
       .map(item => item.point);
   };
 
+  const addNewPoint = () => {
+    // 在球面上随机生成一个点
+    const phi = Math.random() * Math.PI * 2;
+    const theta = Math.acos(2 * Math.random() - 1);
+    
+    const x = sphereRadius * Math.sin(theta) * Math.cos(phi);
+    const y = sphereRadius * Math.sin(theta) * Math.sin(phi);
+    const z = sphereRadius * Math.cos(theta);
+    
+    const position = new THREE.Vector3(x, y, z);
+    
+    const newPoint: Point = {
+      position,
+      id: pointIdCounter.current++,
+      title: newPointTitle || `Point ${pointIdCounter.current}`,
+      color: generateRandomColor()
+    };
+
+    setPoints(prevPoints => {
+      const newPoints = [...prevPoints, newPoint];
+      // 与最近的3个点连接
+      if (prevPoints.length >= 3) {
+        const nearestPoints = findNearestPoints(position, prevPoints, 3);
+        nearestPoints.forEach(nearPoint => {
+          const newCurve: CurveWithColor = {
+            start: nearPoint.position,
+            end: position,
+            id: curveIdCounter.current++,
+            color: generateRandomColor()
+          };
+          setCurves(prev => [...prev, newCurve]);
+        });
+      }
+      return newPoints;
+    });
+
+    setShowModal(false);
+    setNewPointTitle('');
+  };
+
+  // 添加删除点的函数
+  const deletePoint = (pointId: number) => {
+    // 删除点
+    setPoints(prevPoints => prevPoints.filter(p => p.id !== pointId));
+    
+    // 删除与该点相关的所有曲线
+    setCurves(prevCurves => prevCurves.filter(curve => 
+      !(curve.start.equals(points.find(p => p.id === pointId)?.position!) || 
+        curve.end.equals(points.find(p => p.id === pointId)?.position!))
+    ));
+  };
+
   return (
-    <Canvas camera={{ position: [0, 0, 15] }}>
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
-      
-      {/* 原点 */}
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[0.15, 32, 32]} />
-        <meshPhongMaterial color="yellow" />
-      </mesh>
-
-      {/* 坐标轴 */}
-      <group>
-        {/* X轴 - 红色 */}
-        <line>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              count={2}
-              array={new Float32Array([-sphereRadius, 0, 0, sphereRadius, 0, 0])}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial color="red" />
-        </line>
-        
-        {/* Y轴 - 绿色 */}
-        <line>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              count={2}
-              array={new Float32Array([0, -sphereRadius, 0, 0, sphereRadius, 0])}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial color="green" />
-        </line>
-        
-        {/* Z轴 - 蓝色 */}
-        <line>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              count={2}
-              array={new Float32Array([0, 0, -sphereRadius, 0, 0, sphereRadius])}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial color="blue" />
-        </line>
-      </group>
-
-      {/* 点 */}
-      {points.map((point) => (
-        <mesh 
-          key={point.id} 
-          position={point.position}
-          onPointerOver={() => setHoveredPoint(point.id)}
-          onPointerOut={() => setHoveredPoint(null)}
+    <div style={{ display: 'flex' }}>
+      {/* 控制按钮组 */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        zIndex: 1000
+      }}>
+        <button
+          onClick={() => setShowAxes(!showAxes)}
+          style={{
+            padding: '8px 12px',
+            background: 'rgba(128, 128, 128, 0.8)',
+            border: 'none',
+            borderRadius: '4px',
+            color: 'white',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
         >
-          <sphereGeometry args={[0.1, 16, 16]} />
-          <meshPhongMaterial color={point.color} />
-          {hoveredPoint === point.id && (
-            <Html
-              position={[0, 0.2, 0]}
+          {showAxes ? 'Hide Axes' : 'Show Axes'}
+        </button>
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{
+            background: 'rgba(128, 128, 128, 0.95)',
+            padding: '20px',
+            borderRadius: '8px',
+            minWidth: '300px'
+          }}>
+            <h3 style={{ margin: '0 0 15px 0', color: 'white' }}>Add New Point</h3>
+            <input
+              type="text"
+              value={newPointTitle}
+              onChange={(e) => setNewPointTitle(e.target.value)}
+              placeholder="Enter point title"
               style={{
-                background: 'rgba(128, 128, 128, 0.8)',
-                padding: '6px 10px',
+                width: '100%',
+                padding: '8px',
+                marginBottom: '15px',
+                borderRadius: '4px',
+                border: 'none'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowModal(false)}
+                style={{
+                  padding: '8px 12px',
+                  background: '#666',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addNewPoint}
+                style={{
+                  padding: '8px 12px',
+                  background: '#4444ff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 侧边栏 */}
+      <div style={{
+        width: '250px',
+        padding: '20px',
+        background: 'rgba(128, 128, 128, 0.8)',
+        color: 'white',
+        height: '100vh',
+        overflowY: 'auto'
+      }}>
+        {/* 点列表 */}
+        <div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '10px'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: 0 }}>Points</h3>
+            <button
+              onClick={() => setShowModal(true)}
+              style={{
+                padding: '4px 8px',
+                background: 'rgba(68, 68, 255, 0.8)',
+                border: 'none',
                 borderRadius: '4px',
                 color: 'white',
-                fontSize: '12px',
-                pointerEvents: 'none',
-                transform: 'translate3d(-50%, -50%, 0)'
+                cursor: 'pointer',
+                fontSize: '12px'
               }}
             >
-              {point.title}
-            </Html>
+              Add Point
+            </button>
+          </div>
+          <div style={{ 
+            maxHeight: '40vh', 
+            overflowY: 'auto',
+            borderBottom: '1px solid rgba(255,255,255,0.3)',
+            marginBottom: '20px',
+            paddingBottom: '10px'
+          }}>
+            {points.map(point => (
+              <div 
+                key={point.id}
+                style={{
+                  padding: '8px',
+                  marginBottom: '4px',
+                  background: hoveredPoint === point.id ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  justifyContent: 'space-between'
+                }}
+                onMouseEnter={() => setHoveredPoint(point.id)}
+                onMouseLeave={() => setHoveredPoint(null)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div 
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: point.color.getStyle()
+                    }}
+                  />
+                  <span>{point.title}</span>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deletePoint(point.id);
+                  }}
+                  style={{
+                    background: 'rgba(255, 77, 77, 0.8)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    padding: 0
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 线列表 */}
+        <div>
+          <h3>Curves</h3>
+          <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
+            {curves.map(curve => (
+              <div 
+                key={curve.id}
+                style={{
+                  padding: '8px',
+                  marginBottom: '4px',
+                  background: 'transparent',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <div 
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: curve.color.getStyle()
+                  }}
+                />
+                <span>Curve {curve.id}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 3D场景 */}
+      <div style={{ flex: 1 }}>
+        <Canvas camera={{ position: [0, 0, 15] }}>
+          <ambientLight intensity={0.5} />
+          <pointLight position={[10, 10, 10]} />
+          
+          {showAxes && (
+            <>
+              {/* 原点 */}
+              <mesh position={[0, 0, 0]}>
+                <sphereGeometry args={[0.15, 32, 32]} />
+                <meshPhongMaterial color="yellow" />
+              </mesh>
+
+              {/* 坐标轴 */}
+              <group>
+                {/* X轴 - 红色 */}
+                <line>
+                  <bufferGeometry>
+                    <bufferAttribute
+                      attach="attributes-position"
+                      count={2}
+                      array={new Float32Array([-sphereRadius, 0, 0, sphereRadius, 0, 0])}
+                      itemSize={3}
+                    />
+                  </bufferGeometry>
+                  <lineBasicMaterial color="red" />
+                </line>
+                
+                {/* Y轴 - 绿色 */}
+                <line>
+                  <bufferGeometry>
+                    <bufferAttribute
+                      attach="attributes-position"
+                      count={2}
+                      array={new Float32Array([0, -sphereRadius, 0, 0, sphereRadius, 0])}
+                      itemSize={3}
+                    />
+                  </bufferGeometry>
+                  <lineBasicMaterial color="green" />
+                </line>
+                
+                {/* Z轴 - 蓝色 */}
+                <line>
+                  <bufferGeometry>
+                    <bufferAttribute
+                      attach="attributes-position"
+                      count={2}
+                      array={new Float32Array([0, 0, -sphereRadius, 0, 0, sphereRadius])}
+                      itemSize={3}
+                    />
+                  </bufferGeometry>
+                  <lineBasicMaterial color="blue" />
+                </line>
+              </group>
+            </>
           )}
-        </mesh>
-      ))}
 
-      {/* 波浪曲线 */}
-      {curves.map((curve) => (
-        <line key={curve.id}>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              count={100}
-              array={generateWavyCurvePoints(curve.start, curve.end, sphereRadius)}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial color={curve.color} />
-        </line>
-      ))}
+          {/* 点 */}
+          {points.map((point) => (
+            <mesh 
+              key={point.id} 
+              position={point.position}
+              onPointerOver={() => setHoveredPoint(point.id)}
+              onPointerOut={() => setHoveredPoint(null)}
+            >
+              <sphereGeometry args={[0.1, 16, 16]} />
+              <meshPhongMaterial color={point.color} />
+              {hoveredPoint === point.id && (
+                <Html
+                  position={[0, 0.2, 0]}
+                  style={{
+                    background: 'rgba(128, 128, 128, 0.8)',
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    color: 'white',
+                    fontSize: '12px',
+                    pointerEvents: 'none',
+                    transform: 'translate3d(-50%, -50%, 0)'
+                  }}
+                >
+                  {point.title}
+                </Html>
+              )}
+            </mesh>
+          ))}
 
-      <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
-    </Canvas>
+          {/* 波浪曲线 */}
+          {curves.map((curve) => (
+            <line key={curve.id}>
+              <bufferGeometry>
+                <bufferAttribute
+                  attach="attributes-position"
+                  count={100}
+                  array={generateWavyCurvePoints(curve.start, curve.end, sphereRadius)}
+                  itemSize={3}
+                />
+              </bufferGeometry>
+              <lineBasicMaterial color={curve.color} />
+            </line>
+          ))}
+
+          <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+        </Canvas>
+      </div>
+    </div>
   );
 };
 
