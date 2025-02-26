@@ -37,6 +37,7 @@ export const SpherePoints = () => {
   const [newCurveTitle, setNewCurveTitle] = useState('');
   const [startPoint, setStartPoint] = useState<Point | null>(null);
   const [endPoint, setEndPoint] = useState<Point | null>(null);
+  const [hoveredCurve, setHoveredCurve] = useState<number | null>(null);
 
   // 生成随机颜色
   const generateRandomColor = () => {
@@ -424,24 +425,39 @@ export const SpherePoints = () => {
                 style={{
                   padding: '8px',
                   marginBottom: '4px',
-                  background: 'transparent',
+                  background: hoveredCurve === curve.id ? 'rgba(255,255,255,0.2)' : 'transparent',
                   borderRadius: '4px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   justifyContent: 'space-between'
                 }}
+                onMouseEnter={() => setHoveredCurve(curve.id)}
+                onMouseLeave={() => setHoveredCurve(null)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div 
-                    style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      background: curve.color.getStyle()
-                    }}
-                  />
-                  <span>{curve.title}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div 
+                      style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: curve.color.getStyle()
+                      }}
+                    />
+                    <span>{curve.title}</span>
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: 'rgba(255,255,255,0.7)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>{points.find(p => p.position.equals(curve.start))?.title}</span>
+                    <span>→</span>
+                    <span>{points.find(p => p.position.equals(curve.end))?.title}</span>
+                  </div>
                 </div>
                 <button
                   onClick={(e) => {
@@ -569,17 +585,36 @@ export const SpherePoints = () => {
 
           {/* 波浪曲线 */}
           {curves.map((curve) => (
-            <line key={curve.id}>
-              <bufferGeometry>
-                <bufferAttribute
-                  attach="attributes-position"
-                  count={100}
-                  array={generateWavyCurvePoints(curve.start, curve.end, sphereRadius)}
-                  itemSize={3}
-                />
-              </bufferGeometry>
-              <lineBasicMaterial color={curve.color} />
-            </line>
+            <group key={curve.id}>
+              <line>
+                <bufferGeometry>
+                  <bufferAttribute
+                    attach="attributes-position"
+                    count={100}
+                    array={generateWavyCurvePoints(curve.start, curve.end, sphereRadius)}
+                    itemSize={3}
+                  />
+                </bufferGeometry>
+                <lineBasicMaterial color={curve.color} />
+              </line>
+
+              {hoveredCurve === curve.id && (
+                <Html
+                  position={getMidPointPosition(curve.start, curve.end, sphereRadius)}
+                  style={{
+                    background: 'rgba(128, 128, 128, 0.8)',
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    color: 'white',
+                    fontSize: '12px',
+                    pointerEvents: 'none',
+                    transform: 'translate3d(-50%, -50%, 0)'
+                  }}
+                >
+                  {curve.title}
+                </Html>
+              )}
+            </group>
           ))}
 
           <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
@@ -752,4 +787,30 @@ function generateWavyCurvePoints(start: THREE.Vector3, end: THREE.Vector3, radiu
   }
 
   return points;
+}
+
+// 修改获取中点位置的函数
+function getMidPointPosition(start: THREE.Vector3, end: THREE.Vector3, radius: number): THREE.Vector3 {
+  const curvature = 0.3; // 与曲线使用相同的弯曲程度
+  
+  // 计算中点和随机偏移，与曲线生成使用相同的逻辑
+  const midPoint = new THREE.Vector3().lerpVectors(start, end, 0.5);
+  const randomOffset = new THREE.Vector3(
+    (Math.random() - 0.5) * 2,
+    (Math.random() - 0.5) * 2,
+    (Math.random() - 0.5) * 2
+  ).multiplyScalar(radius * curvature);
+  
+  return midPoint.add(randomOffset);
+}
+
+// 获取箭头旋转
+function getArrowRotation(start: THREE.Vector3, end: THREE.Vector3): [number, number, number] {
+  const direction = end.clone().sub(start);
+  const euler = new THREE.Euler();
+  euler.setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, 1),
+    direction.normalize()
+  ));
+  return [euler.x, euler.y, euler.z];
 } 
