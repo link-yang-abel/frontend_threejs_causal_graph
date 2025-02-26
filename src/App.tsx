@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import { SpherePoints } from './components/SpherePoints';
 import './App.css';
 

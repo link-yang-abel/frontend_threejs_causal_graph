@@ -30,7 +30,8 @@ export const SpherePoints = () => {
   const [showAxes, setShowAxes] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newPointTitle, setNewPointTitle] = useState('');
-  const [isAddingCurve, setIsAddingCurve] = useState(false);
+//   const [isAddingCurve, setIsAddingCurve] = useState(false);
+  const [isAddingCurve, ] = useState(false);
   const [selectedPoints, setSelectedPoints] = useState<Point[]>([]);
   const [showCurveModal, setShowCurveModal] = useState(false);
   const [newCurveTitle, setNewCurveTitle] = useState('');
@@ -533,10 +534,15 @@ export const SpherePoints = () => {
             <mesh 
               key={point.id} 
               position={point.position}
-              onPointerOver={() => setHoveredPoint(point.id)}
-              onPointerOut={() => setHoveredPoint(null)}
+              onPointerOver={() => {
+                setHoveredPoint(point.id);
+                document.body.style.cursor = isAddingCurve ? 'pointer' : 'default';
+              }}
+              onPointerOut={() => {
+                setHoveredPoint(null);
+                document.body.style.cursor = 'default';
+              }}
               onClick={() => handlePointClick(point)}
-              style={{ cursor: isAddingCurve ? 'pointer' : 'default' }}
             >
               <sphereGeometry args={[0.1, 16, 16]} />
               <meshPhongMaterial 
