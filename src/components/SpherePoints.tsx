@@ -316,7 +316,9 @@ export const SpherePoints = () => {
             alignItems: 'center',
             marginBottom: '10px'
           }}>
-            <h3 style={{ marginTop: 0, marginBottom: 0 }}>Points</h3>
+            <h3 style={{ marginTop: 0, marginBottom: 0 }}>
+              Points ({points.length})
+            </h3>
             <button
               onClick={() => setShowModal(true)}
               style={{
@@ -402,7 +404,9 @@ export const SpherePoints = () => {
             alignItems: 'center',
             marginBottom: '10px'
           }}>
-            <h3 style={{ marginTop: 0, marginBottom: 0 }}>Curves</h3>
+            <h3 style={{ marginTop: 0, marginBottom: 0 }}>
+              Curves ({curves.length})
+            </h3>
             <button
               onClick={() => setShowCurveModal(true)}
               style={{
