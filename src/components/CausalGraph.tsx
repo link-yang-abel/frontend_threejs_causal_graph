@@ -21,7 +21,7 @@ interface CurveWithColor extends CurveLine {
   title: string;
 }
 
-export const SpherePoints = () => {
+export const CausalGraph = () => {
   const [points, setPoints] = useState<Point[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const sphereRadius = 5;

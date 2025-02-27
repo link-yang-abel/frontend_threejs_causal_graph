@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { HomePage } from '@/pages/HomePage';
-import { SpherePointsPage } from './pages/SpherePointsPage';
+import { CausalGraphPage } from '@/pages/CausalGraphPage';
 
 function App() {
   return (
@@ -13,7 +13,7 @@ function App() {
           <main>
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/causal-graph" element={<SpherePointsPage />} />
+              <Route path="/causal-graph" element={<CausalGraphPage />} />
             </Routes>
           </main>
         </div>
