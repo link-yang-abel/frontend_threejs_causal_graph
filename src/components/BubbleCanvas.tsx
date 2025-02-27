@@ -13,7 +13,12 @@ interface Bubble {
   borderWidth: number;
 }
 
-export function BubbleCanvas() {
+interface BubbleCanvasProps {
+  showIcons: boolean;
+  showScores: boolean;
+}
+
+export function BubbleCanvas({ showIcons, showScores }: BubbleCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bubbles = useRef<Bubble[]>([]);
   const animationRef = useRef<number>();
@@ -223,12 +228,14 @@ export function BubbleCanvas() {
         // 使用新的绘制函数
         drawBubble(ctx, bubble);
 
-        // 绘制图标
-        ctx.strokeStyle = bubble.color;
-        renderIcon(ctx, bubble.iconType, bubble.x, bubble.y);
+        // 根据开关状态决定是否渲染图标
+        if (showIcons) {
+          ctx.strokeStyle = bubble.color;
+          renderIcon(ctx, bubble.iconType, bubble.x, bubble.y);
+        }
 
-        // 绘制分数
-        if (bubble.score !== undefined) {
+        // 根据开关状态决定是否渲染分数
+        if (showScores && bubble.score !== undefined) {
           ctx.font = '16px Arial';
           ctx.fillStyle = bubble.color;
           ctx.textAlign = 'center';
@@ -247,7 +254,7 @@ export function BubbleCanvas() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, []);
+  }, [showIcons, showScores]);
 
   return (
     <canvas

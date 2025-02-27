@@ -7,7 +7,7 @@ import { Settings } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  // DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
@@ -47,13 +47,32 @@ export const CausalGraph = () => {
   const [endPoint, setEndPoint] = useState<Point | null>(null);
   const [hoveredCurve, setHoveredCurve] = useState<number | null>(null);
   const [showAxes, setShowAxes] = useState(true);
+  const [showPoints, setShowPoints] = useState(true);
+  const [showCurves, setShowCurves] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(true);
   const [open, setOpen] = useState(false);
 
-  // 生成随机颜色
-  const generateRandomColor = () => {
+  // 为点生成明亮的颜色
+  const generatePointColor = () => {
+    // 使用更鲜艳的色相范围
     const hue = Math.random();
-    const saturation = 0.7 + Math.random() * 0.3;
+    // 高饱和度，范围从 0.85 到 1.0
+    const saturation = 0.85 + Math.random() * 0.15;
+    // 高亮度，范围从 0.7 到 0.9
+    const lightness = 0.7 + Math.random() * 0.2;
+    
+    return new THREE.Color().setHSL(hue, saturation, lightness);
+  };
+
+  // 为线生成柔和的颜色
+  const generateCurveColor = () => {
+    // 使用更柔和的色相范围
+    const hue = Math.random();
+    // 中等饱和度，范围从 0.6 到 0.8
+    const saturation = 0.6 + Math.random() * 0.2;
+    // 中等亮度，范围从 0.5 到 0.7
     const lightness = 0.5 + Math.random() * 0.2;
+    
     return new THREE.Color().setHSL(hue, saturation, lightness);
   };
 
@@ -85,7 +104,7 @@ export const CausalGraph = () => {
         position,
         id: pointIdCounter.current++,
         title: `Point ${pointIdCounter.current}`,
-        color: generateRandomColor()
+        color: generatePointColor()
       };
       
       newPoints.push(newPoint);
@@ -98,7 +117,7 @@ export const CausalGraph = () => {
             start: nearPoint.position,
             end: position,
             id: curveIdCounter.current++,
-            color: generateRandomColor(),
+            color: generateCurveColor(),
             title: `Curve ${curveIdCounter.current}`
           };
           newCurves.push(newCurve);
@@ -142,7 +161,7 @@ export const CausalGraph = () => {
       position,
       id: pointIdCounter.current++,
       title: newPointTitle || `Point ${pointIdCounter.current}`,
-      color: generateRandomColor()
+      color: generatePointColor()
     };
 
     // 添加新点
@@ -156,7 +175,7 @@ export const CausalGraph = () => {
           start: nearPoint.position,
           end: position,
           id: curveIdCounter.current++,
-          color: generateRandomColor(),
+          color: generateCurveColor(),
           title: `Curve ${curveIdCounter.current}`
         };
         setCurves(prev => [...prev, newCurve]);
@@ -191,7 +210,7 @@ export const CausalGraph = () => {
         start: startPoint.position,
         end: endPoint.position,
         id: curveIdCounter.current++,
-        color: generateRandomColor(),
+        color: generateCurveColor(),
         title: newCurveTitle || `Curve ${curveIdCounter.current}`
       };
       setCurves(prev => [...prev, newCurve]);
@@ -227,21 +246,39 @@ export const CausalGraph = () => {
             <Settings className="h-[1.2rem] w-[1.2rem]" />
             <span className="sr-only">Settings</span>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[240px] bg-background/95 backdrop-blur">
-            <div className="flex items-center justify-between px-3 py-2 space-x-4">
-              <Label htmlFor="show-axes" className="whitespace-nowrap">Show Axes</Label>
+          <DropdownMenuContent align="end" className="w-[200px] bg-background/95 backdrop-blur">
+            <div className="flex items-center justify-between p-2">
+              <Label htmlFor="show-axes">Show Axes</Label>
               <Switch
                 id="show-axes"
                 checked={showAxes}
                 onCheckedChange={setShowAxes}
               />
             </div>
-            <DropdownMenuItem>
-              Reset Camera
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              Clear All Points
-            </DropdownMenuItem>
+            <div className="flex items-center justify-between p-2">
+              <Label htmlFor="show-points">Show Points</Label>
+              <Switch
+                id="show-points"
+                checked={showPoints}
+                onCheckedChange={setShowPoints}
+              />
+            </div>
+            <div className="flex items-center justify-between p-2">
+              <Label htmlFor="show-curves">Show Curves</Label>
+              <Switch
+                id="show-curves"
+                checked={showCurves}
+                onCheckedChange={setShowCurves}
+              />
+            </div>
+            <div className="flex items-center justify-between p-2">
+              <Label htmlFor="show-sidebar">Show Sidebar</Label>
+              <Switch
+                id="show-sidebar"
+                checked={showSidebar}
+                onCheckedChange={setShowSidebar}
+              />
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -313,203 +350,219 @@ export const CausalGraph = () => {
       )}
 
       {/* 侧边栏 */}
-      <div style={{
-        width: '250px',
-        padding: '20px',
-        background: 'rgba(128, 128, 128, 0.8)',
-        color: 'white',
-        height: '100vh',
-        overflowY: 'auto'
-      }}>
-        {/* 点列表 */}
-        <div>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '10px'
-          }}>
-            <h3 style={{ marginTop: 0, marginBottom: 0 }}>
-              Points ({points.length})
-            </h3>
-            <button
-              onClick={() => setShowModal(true)}
-              style={{
-                padding: '4px 8px',
-                background: 'rgba(68, 68, 255, 0.8)',
-                border: 'none',
-                borderRadius: '4px',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
-            >
-              Add Point
-            </button>
-          </div>
-          <div style={{ 
-            maxHeight: '40vh', 
-            overflowY: 'auto',
-            borderBottom: '1px solid rgba(255,255,255,0.3)',
-            marginBottom: '20px',
-            paddingBottom: '10px'
-          }}>
-            {points.map(point => (
-              <div 
-                key={point.id}
+      {showSidebar && (
+        <div style={{
+          width: '320px',
+          minWidth: '320px',
+          padding: '20px',
+          background: 'rgba(128, 128, 128, 0.8)',
+          color: 'white',
+          height: '100vh',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px'
+        }}>
+          {/* 点列表 */}
+          <div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '15px',
+              padding: '0 5px'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '16px' }}>
+                Points ({points.length})
+              </h3>
+              <button
+                onClick={() => setShowModal(true)}
                 style={{
-                  padding: '8px',
-                  marginBottom: '4px',
-                  background: hoveredPoint === point.id ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  padding: '6px 12px',
+                  background: 'rgba(68, 68, 255, 0.8)',
+                  border: 'none',
                   borderRadius: '4px',
+                  color: 'white',
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  justifyContent: 'space-between'
+                  fontSize: '13px'
                 }}
-                onMouseEnter={() => setHoveredPoint(point.id)}
-                onMouseLeave={() => setHoveredPoint(null)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div 
-                    style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      background: point.color.getStyle()
-                    }}
-                  />
-                  <span>{point.title}</span>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deletePoint(point.id);
-                  }}
+                Add Point
+              </button>
+            </div>
+            <div style={{ 
+              maxHeight: '40vh', 
+              overflowY: 'auto',
+              borderBottom: '1px solid rgba(255,255,255,0.3)',
+              marginBottom: '20px',
+              paddingBottom: '15px',
+              paddingRight: '10px'
+            }}>
+              {points.map(point => (
+                <div 
+                  key={point.id}
                   style={{
-                    background: 'rgba(255, 77, 77, 0.8)',
-                    border: 'none',
+                    padding: '8px',
+                    marginBottom: '4px',
+                    background: hoveredPoint === point.id ? 'rgba(255,255,255,0.2)' : 'transparent',
                     borderRadius: '4px',
-                    width: '24px',
-                    height: '24px',
+                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    padding: 0
+                    gap: '8px',
+                    justifyContent: 'space-between'
                   }}
+                  onMouseEnter={() => setHoveredPoint(point.id)}
+                  onMouseLeave={() => setHoveredPoint(null)}
                 >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 线列表 */}
-        <div>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '10px'
-          }}>
-            <h3 style={{ marginTop: 0, marginBottom: 0 }}>
-              Curves ({curves.length})
-            </h3>
-            <button
-              onClick={() => setShowCurveModal(true)}
-              style={{
-                padding: '4px 8px',
-                background: 'rgba(68, 68, 255, 0.8)',
-                border: 'none',
-                borderRadius: '4px',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
-            >
-              Add Curve
-            </button>
-          </div>
-          <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
-            {curves.map(curve => (
-              <div 
-                key={curve.id}
-                style={{
-                  padding: '8px',
-                  marginBottom: '4px',
-                  background: hoveredCurve === curve.id ? 'rgba(255,255,255,0.2)' : 'transparent',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  justifyContent: 'space-between'
-                }}
-                onMouseEnter={() => setHoveredCurve(curve.id)}
-                onMouseLeave={() => setHoveredCurve(null)}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div 
                       style={{
                         width: '12px',
                         height: '12px',
                         borderRadius: '50%',
-                        background: curve.color.getStyle()
+                        background: point.color.getStyle()
                       }}
                     />
-                    <span>{curve.title}</span>
+                    <span>{point.title}</span>
                   </div>
-                  <div style={{ 
-                    fontSize: '12px', 
-                    color: 'rgba(255,255,255,0.7)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
-                    <span>{points.find(p => p.position.equals(curve.start))?.title}</span>
-                    <span>→</span>
-                    <span>{points.find(p => p.position.equals(curve.end))?.title}</span>
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deletePoint(point.id);
+                    }}
+                    style={{
+                      background: 'rgba(255, 77, 77, 0.8)',
+                      border: 'none',
+                      borderRadius: '4px',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      padding: 0
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteCurve(curve.id);
-                  }}
+              ))}
+            </div>
+          </div>
+
+          {/* 线列表 */}
+          <div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '15px',
+              padding: '0 5px'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '16px' }}>
+                Curves ({curves.length})
+              </h3>
+              <button
+                onClick={() => setShowCurveModal(true)}
+                style={{
+                  padding: '6px 12px',
+                  background: 'rgba(68, 68, 255, 0.8)',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                Add Curve
+              </button>
+            </div>
+            <div style={{ 
+              maxHeight: '40vh', 
+              overflowY: 'auto',
+              paddingRight: '10px'
+            }}>
+              {curves.map(curve => (
+                <div 
+                  key={curve.id}
                   style={{
-                    background: 'rgba(255, 77, 77, 0.8)',
-                    border: 'none',
+                    padding: '8px',
+                    marginBottom: '4px',
+                    background: hoveredCurve === curve.id ? 'rgba(255,255,255,0.2)' : 'transparent',
                     borderRadius: '4px',
-                    width: '24px',
-                    height: '24px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    padding: 0
+                    gap: '8px',
+                    justifyContent: 'space-between'
                   }}
+                  onMouseEnter={() => setHoveredCurve(curve.id)}
+                  onMouseLeave={() => setHoveredCurve(null)}
                 >
-                  ×
-                </button>
-              </div>
-            ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div 
+                        style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          background: curve.color.getStyle()
+                        }}
+                      />
+                      <span>{curve.title}</span>
+                    </div>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: 'rgba(255,255,255,0.7)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      <span>{points.find(p => p.position.equals(curve.start))?.title}</span>
+                      <span>→</span>
+                      <span>{points.find(p => p.position.equals(curve.end))?.title}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteCurve(curve.id);
+                    }}
+                    style={{
+                      background: 'rgba(255, 77, 77, 0.8)',
+                      border: 'none',
+                      borderRadius: '4px',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      padding: 0
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 3D场景 */}
       <div style={{ flex: 1 }}>
         <Canvas camera={{ position: [0, 0, 15] }}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} />
-          
+          {/* 添加多个光源以更好地照亮场景 */}
+          <ambientLight intensity={0.8} /> {/* 增加环境光强度 */}
+          <pointLight position={[10, 10, 10]} intensity={1} />
+          <pointLight position={[-10, -10, -10]} intensity={0.5} />
+          <directionalLight position={[0, 0, 5]} intensity={0.5} />
+
           {showAxes && (
             <>
               {/* 原点 */}
@@ -563,7 +616,7 @@ export const CausalGraph = () => {
           )}
 
           {/* 点 */}
-          {points.map((point) => (
+          {showPoints && points.map((point) => (
             <mesh 
               key={point.id} 
               position={point.position}
@@ -578,8 +631,10 @@ export const CausalGraph = () => {
               onClick={() => handlePointClick(point)}
             >
               <sphereGeometry args={[0.1, 16, 16]} />
-              <meshPhongMaterial 
-                color={selectedPoints.includes(point) ? 'yellow' : point.color} 
+              <meshStandardMaterial  // 使用 StandardMaterial 来获得更好的光照效果
+                color={selectedPoints.includes(point) ? 'yellow' : point.color}
+                metalness={0.1}
+                roughness={0.5}
               />
               {hoveredPoint === point.id && (
                 <Html
@@ -601,7 +656,7 @@ export const CausalGraph = () => {
           ))}
 
           {/* 波浪曲线 */}
-          {curves.map((curve) => (
+          {showCurves && curves.map((curve) => (
             <group key={curve.id}>
               <line>
                 <bufferGeometry>
