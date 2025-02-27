@@ -2,6 +2,16 @@ import { useRef, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { Settings } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 interface Point {
   position: THREE.Vector3;
@@ -27,10 +37,8 @@ export const CausalGraph = () => {
   const sphereRadius = 5;
   const pointIdCounter = useRef(0);
   const curveIdCounter = useRef(0);
-  const [showAxes, setShowAxes] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newPointTitle, setNewPointTitle] = useState('');
-//   const [isAddingCurve, setIsAddingCurve] = useState(false);
   const [isAddingCurve, ] = useState(false);
   const [selectedPoints, setSelectedPoints] = useState<Point[]>([]);
   const [showCurveModal, setShowCurveModal] = useState(false);
@@ -38,6 +46,8 @@ export const CausalGraph = () => {
   const [startPoint, setStartPoint] = useState<Point | null>(null);
   const [endPoint, setEndPoint] = useState<Point | null>(null);
   const [hoveredCurve, setHoveredCurve] = useState<number | null>(null);
+  const [showAxes, setShowAxes] = useState(true);
+  const [open, setOpen] = useState(false);
 
   // 生成随机颜色
   const generateRandomColor = () => {
@@ -210,27 +220,30 @@ export const CausalGraph = () => {
 
   return (
     <div style={{ display: 'flex' }}>
-      {/* 控制按钮组 */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        zIndex: 1000
-      }}>
-        <button
-          onClick={() => setShowAxes(!showAxes)}
-          style={{
-            padding: '8px 12px',
-            background: 'rgba(128, 128, 128, 0.8)',
-            border: 'none',
-            borderRadius: '4px',
-            color: 'white',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          {showAxes ? 'Hide Axes' : 'Show Axes'}
-        </button>
+      {/* 设置按钮 - 调整位置和样式 */}
+      <div className="absolute top-4 right-4 z-50">
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 w-10">
+            <Settings className="h-[1.2rem] w-[1.2rem]" />
+            <span className="sr-only">Settings</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[240px] bg-background/95 backdrop-blur">
+            <div className="flex items-center justify-between px-3 py-2 space-x-4">
+              <Label htmlFor="show-axes" className="whitespace-nowrap">Show Axes</Label>
+              <Switch
+                id="show-axes"
+                checked={showAxes}
+                onCheckedChange={setShowAxes}
+              />
+            </div>
+            <DropdownMenuItem>
+              Reset Camera
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              Clear All Points
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Modal */}
