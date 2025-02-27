@@ -9,7 +9,12 @@ export function HomePage() {
             Interactive 3D visualization of causal relationships in a spherical space.
           </p>
         </div>
-        {/* Add more demo cards here */}
+        <div className="p-6 border rounded-lg">
+          <h2 className="text-2xl font-semibold mb-4">Bubble</h2>
+          <p className="text-muted-foreground mb-4">
+            Interactive bubble chart visualization.
+          </p>
+        </div>
       </div>
     </div>
   )

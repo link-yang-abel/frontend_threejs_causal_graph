@@ -3,6 +3,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { HomePage } from '@/pages/HomePage';
 import { CausalGraphPage } from '@/pages/CausalGraphPage';
+import { BubblePage } from '@/pages/BubblePage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/causal-graph" element={<CausalGraphPage />} />
+              <Route path="/bubble" element={<BubblePage />} />
             </Routes>
           </main>
         </div>

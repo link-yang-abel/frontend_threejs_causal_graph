@@ -6,5 +6,9 @@ export const routes = [
   {
     path: "/causal-graph",
     label: "Causal Graph"
+  },
+  {
+    path: "/bubble",
+    label: "Bubble"
   }
 ] as const 
