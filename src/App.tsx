@@ -4,6 +4,7 @@ import { Navbar } from '@/components/Navbar';
 import { HomePage } from '@/pages/HomePage';
 import { CausalGraphPage } from '@/pages/CausalGraphPage';
 import { BubblePage } from '@/pages/BubblePage';
+import { ReactFlowPage } from '@/pages/ReactFlowPage';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/causal-graph" element={<CausalGraphPage />} />
               <Route path="/bubble" element={<BubblePage />} />
+              <Route path="/react-flow" element={<ReactFlowPage />} />
             </Routes>
           </main>
         </div>

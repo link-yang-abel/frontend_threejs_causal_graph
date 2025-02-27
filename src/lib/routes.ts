@@ -10,5 +10,9 @@ export const routes = [
   {
     path: "/bubble",
     label: "Bubble"
+  },
+  {
+    path: "/react-flow",
+    label: "React Flow"
   }
 ] as const 

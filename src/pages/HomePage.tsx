@@ -15,6 +15,12 @@ export function HomePage() {
             Interactive bubble chart visualization.
           </p>
         </div>
+        <div className="p-6 border rounded-lg">
+          <h2 className="text-2xl font-semibold mb-4">React Flow</h2>
+          <p className="text-muted-foreground mb-4">
+            Interactive flow chart visualization.
+          </p>
+        </div>
       </div>
     </div>
   )
