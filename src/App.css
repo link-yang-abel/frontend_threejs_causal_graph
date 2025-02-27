@@ -7,4 +7,24 @@
 body {
   margin: 0;
   padding: 0;
+}
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 10px;
+  z-index: 1000;
+}
+
+.nav a {
+  color: white;
+  text-decoration: none;
+  padding: 5px 10px;
+  background: rgba(128, 128, 128, 0.8);
+  border-radius: 4px;
+}
+
+.nav a:hover {
+  background: rgba(128, 128, 128, 0.9);
 } 
