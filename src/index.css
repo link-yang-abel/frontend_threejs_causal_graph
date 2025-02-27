@@ -1,9 +1,11 @@
-@tailwind base;
+@import 'tailwindcss';
+@config '../tailwind.config.js';
+/* @tailwind base;
 
-@custom-variant dark (&:is(.dark *));
 @tailwind components;
 @tailwind utilities;
-
+ */
+@custom-variant dark (&:is(.dark *));
 @layer base {
   :root {
     --background: 0 0% 100%;
