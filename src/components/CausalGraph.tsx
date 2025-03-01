@@ -31,7 +31,7 @@ interface CurveWithColor extends CurveLine {
   title: string;
 }
 
-export const CausalGraph = () => {
+export default function CausalGraph() {
   const [points, setPoints] = useState<Point[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const sphereRadius = 5;

@@ -8,6 +8,7 @@ interface Bubble {
   vy: number;
   radius: number;
   iconType: string;
+  iconColor: string;
   score?: number;
   color: string;
   borderWidth: number;
@@ -23,11 +24,20 @@ export function BubbleCanvas({ showIcons, showScores }: BubbleCanvasProps) {
   const bubbles = useRef<Bubble[]>([]);
   const animationRef = useRef<number>();
 
+  // 生成随机亮彩色的函数
+  const generateBrightColor = () => {
+    const hue = Math.random() * 360;  // 随机色相
+    const saturation = 80 + Math.random() * 20;  // 80-100% 饱和度
+    const lightness = 50 + Math.random() * 20;   // 50-70% 亮度
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  // 修改 icons 数组，为每个图标添加随机颜色
   const icons = [
-    { type: 'Brain', color: '#ff6b6b' },
-    { type: 'Cpu', color: '#4ecdc4' },
-    { type: 'Database', color: '#45b7d1' },
-    { type: 'Network', color: '#96ceb4' },
+    { type: 'Brain', color: generateBrightColor() },
+    { type: 'Cpu', color: generateBrightColor() },
+    { type: 'Database', color: generateBrightColor() },
+    { type: 'Network', color: generateBrightColor() },
   ];
 
   const renderIcon = (ctx: CanvasRenderingContext2D, type: string, x: number, y: number) => {
@@ -97,8 +107,9 @@ export function BubbleCanvas({ showIcons, showScores }: BubbleCanvasProps) {
         vy: (Math.random() - 0.5) * 0.8,
         radius,
         iconType: randomIcon.type,
+        iconColor: randomIcon.color,  // 保存图标颜色
         score: Math.random() > 0.5 ? Math.floor(Math.random() * 100) : undefined,
-        color: randomIcon.color,
+        color: '#000000',
         borderWidth: 16, // 1rem = 16px
       };
     });
@@ -108,36 +119,40 @@ export function BubbleCanvas({ showIcons, showScores }: BubbleCanvasProps) {
       ctx.beginPath();
       ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
       
-      // 设置透明填充，增加亮度
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.fill();
-      
-      // 添加内部光晕
-      const innerGlow = ctx.createRadialGradient(
-        bubble.x, bubble.y, 0,
-        bubble.x, bubble.y, bubble.radius
-      );
-      innerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
-      innerGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      ctx.fillStyle = innerGlow;
-      ctx.fill();
-      
-      // 设置边框渐变，增加亮度
+      // 创建从边缘到中心的径向渐变
       const gradient = ctx.createRadialGradient(
-        bubble.x, bubble.y, bubble.radius - bubble.borderWidth,
-        bubble.x, bubble.y, bubble.radius
+        bubble.x, bubble.y, 0,          // 内圆中心点和半径
+        bubble.x, bubble.y, bubble.radius  // 外圆中心点和半径
       );
       
-      // 修改渐变色停点，增加亮度
-      const color = bubble.color;
-      const brighterColor = increaseBrightness(color, 30); // 增加30%的亮度
-      gradient.addColorStop(0, brighterColor); // 内侧更亮
-      gradient.addColorStop(0.5, color); // 中间原色
-      gradient.addColorStop(1, color + 'AA'); // 外侧半透明
+      // 设置渐变色停点
+      // gradient.addColorStop(0, '#000000');     // 中心为黑色
+      // gradient.addColorStop(0.1, '#000000');     // 中心为黑色
+      // gradient.addColorStop(0.3, '#000000');     // 中心为黑色
+      gradient.addColorStop(0.5, '#000000');     // 中心为黑色
+      // gradient.addColorStop(0.7, bubble.color); // 70%处为气泡原色
+      gradient.addColorStop(0.7, '#222222'); // 70%处为气泡原色
+      gradient.addColorStop(0.9, '#555555');    // 90%处开始变为白色
+      // gradient.addColorStop(1, '#ffffff');      // 边缘为白色
+      gradient.addColorStop(1, '#777777');      // 边缘为白色
       
-      // 应用渐变边框
-      ctx.lineWidth = bubble.borderWidth;
-      ctx.strokeStyle = gradient;
+      // 填充渐变
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // 添加边缘光晕效果
+      const glowGradient = ctx.createRadialGradient(
+        bubble.x - bubble.radius * 0.3, bubble.y - bubble.radius * 0.3, 0,
+        bubble.x, bubble.y, bubble.radius
+      );
+      glowGradient.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
+      glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = glowGradient;
+      ctx.fill();
+      
+      // 添加细边框
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1;
       ctx.stroke();
     };
 
@@ -171,13 +186,37 @@ export function BubbleCanvas({ showIcons, showScores }: BubbleCanvasProps) {
 
       // 更新和绘制每个气泡
       bubbles.current.forEach((bubble, i) => {
+        // 添加重力加速度
+        const gravity = 0.1;  // 重力系数
+        bubble.vy += gravity;  // 向下的加速度
+
+        // 添加阻尼系数，使运动更自然
+        const damping = 0.99;
+        bubble.vx *= damping;
+        bubble.vy *= damping;
+
         // 碰撞检测和移动
         bubble.x += bubble.vx;
         bubble.y += bubble.vy;
 
-        // 边界碰撞
-        if (bubble.x <= bubble.radius || bubble.x >= canvas.width - bubble.radius) bubble.vx *= -1;
-        if (bubble.y <= bubble.radius || bubble.y >= canvas.height - bubble.radius) bubble.vy *= -1;
+        // 边界碰撞 - 添加弹性
+        const bounce = 0.7;  // 弹性系数
+        if (bubble.x <= bubble.radius) {
+          bubble.x = bubble.radius;
+          bubble.vx *= -bounce;
+        }
+        if (bubble.x >= canvas.width - bubble.radius) {
+          bubble.x = canvas.width - bubble.radius;
+          bubble.vx *= -bounce;
+        }
+        if (bubble.y <= bubble.radius) {
+          bubble.y = bubble.radius;
+          bubble.vy *= -bounce;
+        }
+        if (bubble.y >= canvas.height - bubble.radius) {
+          bubble.y = canvas.height - bubble.radius;
+          bubble.vy *= -bounce;
+        }
 
         // 气泡间碰撞
         for (let j = i + 1; j < bubbles.current.length; j++) {
@@ -186,8 +225,9 @@ export function BubbleCanvas({ showIcons, showScores }: BubbleCanvasProps) {
           const dy = other.y - bubble.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
+          const minDistanceRatio = 1.02;
           // 使用实际半径作为碰撞距离
-          const minDistance = bubble.radius + other.radius;
+          const minDistance = (bubble.radius + other.radius) * minDistanceRatio;
 
           if (distance < minDistance) {
             // 计算重叠量
@@ -230,16 +270,24 @@ export function BubbleCanvas({ showIcons, showScores }: BubbleCanvasProps) {
 
         // 根据开关状态决定是否渲染图标
         if (showIcons) {
-          ctx.strokeStyle = bubble.color;
-          renderIcon(ctx, bubble.iconType, bubble.x, bubble.y);
+          ctx.strokeStyle = bubble.iconColor;  // 使用存储在气泡上的图标颜色
+          renderIcon(ctx, bubble.iconType, bubble.x, bubble.y - 10);
+        }
+
+        // 添加图标文字说明
+        if (showIcons) {
+          ctx.font = '14px Arial';
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.fillText(bubble.iconType, bubble.x, bubble.y + 15);  // 在图标下方显示文字
         }
 
         // 根据开关状态决定是否渲染分数
         if (showScores && bubble.score !== undefined) {
           ctx.font = '16px Arial';
-          ctx.fillStyle = bubble.color;
+          ctx.fillStyle = '#ffffff';  // 改为白色
           ctx.textAlign = 'center';
-          ctx.fillText(`${bubble.score}%`, bubble.x, bubble.y + 30);
+          ctx.fillText(`${bubble.score}%`, bubble.x, bubble.y + 35);  // 调整位置到文字下方
         }
       });
 
@@ -259,7 +307,7 @@ export function BubbleCanvas({ showIcons, showScores }: BubbleCanvasProps) {
   return (
     <canvas
       ref={canvasRef}
-      className="w-full h-[calc(100vh-64px)]"
+      className="w-full h-[calc(100vh-124px)]"
     />
   );
 } 
